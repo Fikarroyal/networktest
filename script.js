@@ -1111,7 +1111,7 @@
     metricRow('ISP', state.ipInfo ? state.ipInfo.isp : '-', null);
     metricRow('LOKASI', state.ipInfo ? state.ipInfo.location : '-', null);
 
-    doc.save('network-test-hasil.pdf');
+    doc.save('result network test.pdf');
     showToast('success', 'Hasil berhasil diunduh sebagai PDF.', 'file-down');
   }
 
