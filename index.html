@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>Network Test</title>
+<meta name="description" content="Network Test — Uji kecepatan internet, analisis kualitas koneksi, dan optimalkan jaringan Anda dalam satu dashboard modern.">
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="icon" href="img/icon.png" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+<!-- Chart.js untuk grafik real-time -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+
+<!-- jsPDF untuk export hasil -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ===================== BACKGROUND AMBIENT ===================== -->
+<div class="ambient-glow ambient-glow--one" aria-hidden="true"></div>
+<div class="ambient-glow ambient-glow--two" aria-hidden="true"></div>
+
+<!-- ===================== TOAST CONTAINER ===================== -->
+<div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+<!-- ===================== NAVBAR ===================== -->
+<header class="navbar" id="navbar">
+  <div class="navbar__inner">
+    <a href="#beranda" class="navbar__logo">
+      <span class="navbar__logo-icon">
+        <i data-lucide="radar"></i>
+      </span>
+      <span class="navbar__logo-text">Network<strong>Test</strong></span>
+    </a>
+
+    <nav class="navbar__menu" id="navbarMenu">
+      <a href="#beranda" class="navbar__link is-active" data-nav>Beranda</a>
+      <a href="#uji-kecepatan" class="navbar__link" data-nav>Uji Kecepatan</a>
+      <a href="#analisis" class="navbar__link" data-nav>Analisis Jaringan</a>
+      <a href="#riwayat" class="navbar__link" data-nav>Riwayat</a>
+      <a href="#tentang" class="navbar__link" data-nav>Tentang</a>
+    </nav>
+
+    <div class="navbar__actions">
+      <a href="#uji-kecepatan" class="btn btn--primary btn--sm">
+        <i data-lucide="zap"></i>
+        <span>Mulai Pengujian</span>
+      </a>
+      <button class="navbar__burger" id="burgerBtn" aria-label="Buka menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile menu -->
+  <div class="navbar__mobile" id="navbarMobile">
+    <a href="#beranda" class="navbar__mobile-link" data-nav-mobile>Beranda</a>
+    <a href="#uji-kecepatan" class="navbar__mobile-link" data-nav-mobile>Uji Kecepatan</a>
+    <a href="#analisis" class="navbar__mobile-link" data-nav-mobile>Analisis Jaringan</a>
+    <a href="#riwayat" class="navbar__mobile-link" data-nav-mobile>Riwayat</a>
+    <a href="#tentang" class="navbar__mobile-link" data-nav-mobile>Tentang</a>
+    <a href="#uji-kecepatan" class="btn btn--primary" data-nav-mobile>
+      <i data-lucide="zap"></i><span>Mulai Pengujian</span>
+    </a>
+  </div>
+</header>
+
+<main>
+<!-- ===================== HERO ===================== -->
+<section class="hero" id="beranda">
+  <canvas class="hero__canvas" id="heroCanvas" aria-hidden="true"></canvas>
+  <div class="hero__inner">
+    <div class="hero__badge fade-up">
+      <span class="hero__badge-dot"></span>
+      Real-Time Network Analysis
+    </div>
+    <h1 class="hero__title fade-up" style="--delay:0.08s">
+      Kenali Performa Jaringan <br class="hero__title-break"> Secara Real Time
+    </h1>
+    <p class="hero__desc fade-up" style="--delay:0.16s">
+      Lakukan pengujian kecepatan internet, pantau kondisi kualitas koneksi, dapatkan informasi jaringan secara cepat dan mudah dalam satu platform.
+    </p>
+    <div class="hero__actions fade-up" style="--delay:0.24s">
+      <a href="#uji-kecepatan" class="btn btn--primary btn--lg">
+        <i data-lucide="gauge"></i>
+        <span>Mulai Network Test</span>
+      </a>
+      <a href="#analisis" class="btn btn--secondary btn--lg">
+        <i data-lucide="line-chart"></i>
+        <span>Lihat Analisis</span>
+      </a>
+    </div>
+
+    <div class="hero__stats fade-up" style="--delay:0.32s">
+      <div class="hero__stat">
+        <span class="hero__stat-value" id="heroStatServers">18+</span>
+        <span class="hero__stat-label">Server Global</span>
+      </div>
+      <div class="hero__stat-divider"></div>
+      <div class="hero__stat">
+        <span class="hero__stat-value" id="heroStatTests">1.4Jt</span>
+        <span class="hero__stat-label">Pengujian Selesai</span>
+      </div>
+      <div class="hero__stat-divider"></div>
+      <div class="hero__stat">
+        <span class="hero__stat-value">90.5%</span>
+        <span class="hero__stat-label">Akurasi Sinyal</span>
+      </div>
+    </div>
+  </div>
+  <div class="hero__scroll-cue" aria-hidden="true">
+    <i data-lucide="chevron-down"></i>
+  </div>
+</section>
+
+<!-- ===================== PANEL UJI KECEPATAN ===================== -->
+<section class="test-section" id="uji-kecepatan">
+  <div class="section-head reveal">
+    <span class="section-eyebrow">Instrumen Pengujian</span>
+    <h2 class="section-title">Panel Uji Kecepatan</h2>
+    <p class="section-desc">Klik mulai untuk mengukur ping, kecepatan unduh, unggah, dan kestabilan koneksi anda secara menyeluruh.</p>
+  </div>
+
+  <div class="test-panel glass-panel reveal">
+
+    <!-- Status bar -->
+    <div class="test-panel__status">
+      <div class="status-pill" id="networkStatusPill">
+        <span class="status-pill__dot"></span>
+        <span id="networkStatusText">Terhubung</span>
+      </div>
+
+      <div class="mode-toggle" role="group" aria-label="Mode pengujian">
+        <button class="mode-toggle__btn is-active" id="modeAuto" data-mode="auto">
+          <i data-lucide="repeat"></i> Otomatis
+        </button>
+        <button class="mode-toggle__btn" id="modeManual" data-mode="manual">
+          <i data-lucide="hand"></i> Manual
+        </button>
+      </div>
+    </div>
+
+    <div class="test-panel__core">
+      <!-- Dial -->
+      <div class="dial-column">
+        <div class="dial-wrap">
+          <svg class="dial-ring" viewBox="0 0 240 240" aria-hidden="true">
+            <defs>
+              <linearGradient id="dialGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#4f9eea"></stop>
+                <stop offset="100%" stop-color="#2f7fff"></stop>
+              </linearGradient>
+            </defs>
+            <circle class="dial-ring__track" cx="120" cy="120" r="104"></circle>
+            <circle class="dial-ring__progress" id="dialProgress" cx="120" cy="120" r="104"></circle>
+          </svg>
+          <button class="dial-btn" id="testButton" aria-label="Mulai pengujian jaringan">
+            <i data-lucide="play" class="dial-icon dial-icon--play"></i>
+            <i data-lucide="square" class="dial-icon dial-icon--stop"></i>
+            <i data-lucide="rotate-ccw" class="dial-icon dial-icon--redo"></i>
+          </button>
+        </div>
+        <div class="dial-caption-group">
+          <span class="dial-label" id="dialLabel">MULAI</span>
+          <p class="dial-caption" id="dialSub">Tekan untuk menguji</p>
+        </div>
+      </div>
+
+      <!-- Live stage & metrics -->
+      <div class="test-panel__side">
+        <ol class="stage-list" id="stageList">
+          <li class="stage-item" data-stage="connect">
+            <span class="stage-item__icon"><i data-lucide="plug-zap"></i></span>
+            <span class="stage-item__text">Menghubungkan Server</span>
+            <span class="stage-item__state"></span>
+          </li>
+          <li class="stage-item" data-stage="ping">
+            <span class="stage-item__icon"><i data-lucide="activity"></i></span>
+            <span class="stage-item__text">Menguji Ping</span>
+            <span class="stage-item__state"></span>
+          </li>
+          <li class="stage-item" data-stage="download">
+            <span class="stage-item__icon"><i data-lucide="arrow-down-circle"></i></span>
+            <span class="stage-item__text">Menguji Download</span>
+            <span class="stage-item__state"></span>
+          </li>
+          <li class="stage-item" data-stage="upload">
+            <span class="stage-item__icon"><i data-lucide="arrow-up-circle"></i></span>
+            <span class="stage-item__text">Menguji Upload</span>
+            <span class="stage-item__state"></span>
+          </li>
+          <li class="stage-item" data-stage="finish">
+            <span class="stage-item__icon"><i data-lucide="check-circle-2"></i></span>
+            <span class="stage-item__text">Menyelesaikan Analisis</span>
+            <span class="stage-item__state"></span>
+          </li>
+        </ol>
+
+        <div class="live-metrics">
+          <div class="live-metric">
+            <span class="live-metric__label">Ping</span>
+            <span class="live-metric__value"><span id="livePing">0</span> ms</span>
+          </div>
+          <div class="live-metric">
+            <span class="live-metric__label">Download</span>
+            <span class="live-metric__value"><span id="liveDownload">0.0</span> Mbps</span>
+          </div>
+          <div class="live-metric">
+            <span class="live-metric__label">Upload</span>
+            <span class="live-metric__value"><span id="liveUpload">0.0</span> Mbps</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Realtime chart -->
+    <div class="chart-box">
+      <div class="chart-box__head">
+        <span><i data-lucide="line-chart"></i> Grafik Kecepatan Real-Time</span>
+        <div class="chart-legend">
+          <span class="chart-legend__item"><i class="dot dot--download"></i>Download</span>
+          <span class="chart-legend__item"><i class="dot dot--upload"></i>Upload</span>
+          <span class="chart-legend__item"><i class="dot dot--ping"></i>Ping</span>
+        </div>
+      </div>
+      <canvas id="realtimeChart" height="90"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== DASHBOARD HASIL ===================== -->
+<section class="dashboard-section" id="dashboard">
+  <div class="section-head reveal">
+    <span class="section-eyebrow">Hasil Pengujian</span>
+    <h2 class="section-title">Dashboard Hasil</h2>
+    <p class="section-desc">Ringkasan lengkap performa jaringan anda dari pengujian terakhir.</p>
+  </div>
+
+  <div class="dashboard-grid reveal">
+    <div class="metric-card">
+      <span class="metric-card__icon"><i data-lucide="activity"></i></span>
+      <span class="metric-card__label">Ping</span>
+      <span class="metric-card__value"><span id="resultPing">—</span><small>ms</small></span>
+      <span class="metric-card__tag" id="resultPingTag">Menunggu tes</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-card__icon"><i data-lucide="download"></i></span>
+      <span class="metric-card__label">Download</span>
+      <span class="metric-card__value"><span id="resultDownload">—</span><small>Mbps</small></span>
+      <span class="metric-card__tag" id="resultDownloadTag">Menunggu tes</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-card__icon"><i data-lucide="upload"></i></span>
+      <span class="metric-card__label">Upload</span>
+      <span class="metric-card__value"><span id="resultUpload">—</span><small>Mbps</small></span>
+      <span class="metric-card__tag" id="resultUploadTag">Menunggu tes</span>
+    </div>
+
+    <div class="metric-card">
+      <span class="metric-card__icon"><i data-lucide="waves"></i></span>
+      <span class="metric-card__label">Jitter</span>
+      <span class="metric-card__value"><span id="resultJitter">—</span><small>ms</small></span>
+      <span class="metric-card__tag" id="resultJitterTag">Menunggu tes</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-card__icon"><i data-lucide="shield-alert"></i></span>
+      <span class="metric-card__label">Packet Loss</span>
+      <span class="metric-card__value"><span id="resultPacketLoss">—</span><small>%</small></span>
+      <span class="metric-card__tag" id="resultPacketLossTag">Menunggu tes</span>
+    </div>
+    <div class="metric-card metric-card--score">
+      <span class="metric-card__label">Network Quality Score</span>
+      <div class="score-gauge">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <defs>
+            <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#4f9eea"></stop>
+              <stop offset="100%" stop-color="#2f7fff"></stop>
+            </linearGradient>
+          </defs>
+          <circle class="score-gauge__track" cx="60" cy="60" r="52"></circle>
+          <circle class="score-gauge__progress" id="scoreGaugeProgress" cx="60" cy="60" r="52"></circle>
+        </svg>
+        <div class="score-gauge__text">
+          <span id="resultScore">—</span>
+          <small>/100</small>
+        </div>
+      </div>
+      <span class="metric-card__tag" id="resultScoreTag">Menunggu tes</span>
+    </div>
+
+    <div class="metric-card metric-card--wide">
+      <span class="metric-card__icon"><i data-lucide="globe"></i></span>
+      <span class="metric-card__wide-text">
+        <span class="metric-card__label">IP Address</span>
+        <span class="metric-card__value metric-card__value--text" id="resultIP">—</span>
+      </span>
+    </div>
+    <div class="metric-card metric-card--wide">
+      <span class="metric-card__icon"><i data-lucide="wifi"></i></span>
+      <span class="metric-card__wide-text">
+        <span class="metric-card__label">ISP</span>
+        <span class="metric-card__value metric-card__value--text" id="resultISP">—</span>
+      </span>
+    </div>
+    <div class="metric-card metric-card--wide">
+      <span class="metric-card__icon"><i data-lucide="map-pin"></i></span>
+      <span class="metric-card__wide-text">
+        <span class="metric-card__label">Lokasi</span>
+        <span class="metric-card__value metric-card__value--text" id="resultLocation">—</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="export-bar reveal">
+    <button class="btn btn--secondary" id="exportPdfBtn">
+      <i data-lucide="file-down"></i> Unduh PDF
+    </button>
+    <button class="btn btn--secondary" id="copyResultBtn">
+      <i data-lucide="copy"></i> Salin Hasil
+    </button>
+    <button class="btn btn--secondary" id="shareResultBtn">
+      <i data-lucide="share-2"></i> Bagikan Hasil
+    </button>
+  </div>
+</section>
+
+<!-- ===================== ANALISIS ===================== -->
+<section class="analysis-section" id="analisis">
+  <div class="analysis-grid">
+    <div class="analysis-card glass-panel reveal">
+      <div class="section-head section-head--left">
+        <span class="section-eyebrow">Analisis Jaringan</span>
+        <h2 class="section-title">Analisis Koneksi Anda</h2>
+      </div>
+      <p class="analysis-text" id="analysisText">
+        Jalankan pengujian terlebih dahulu agar Network Test dapat menganalisis kualitas koneksi anda secara mendalam dan akurat.
+      </p>
+      <div class="comparison-box" id="comparisonBox" hidden>
+        <span class="comparison-box__label"><i data-lucide="git-compare"></i> Dibandingkan pengujian sebelumnya</span>
+        <div class="comparison-box__row" id="comparisonRow"></div>
+      </div>
+    </div>
+
+    <div class="activity-card glass-panel reveal">
+      <h3><i data-lucide="list-checks"></i> Kelayakan Aktivitas</h3>
+      <div class="activity-list" id="activityList"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== EDUKASI ===================== -->
+<section class="edu-section">
+  <div class="section-head reveal">
+    <span class="section-eyebrow">Pahami Istilahnya</span>
+    <h2 class="section-title">Panduan Singkat Tentang Jaringan</h2>
+  </div>
+  <div class="edu-grid reveal">
+    <div class="edu-card">
+      <span class="edu-card__icon"><i data-lucide="activity"></i></span>
+      <h3>Apa itu Ping?</h3>
+      <p>Ping adalah waktu yang dibutuhkan data untuk pergi dari perangkat anda ke server dan kembali lagi, diukur dalam milidetik. Semakin rendah nilainya, semakin responsif koneksi Anda.</p>
+    </div>
+    <div class="edu-card">
+      <span class="edu-card__icon"><i data-lucide="waves"></i></span>
+      <h3>Apa itu Jitter?</h3>
+      <p>Jitter adalah variasi waktu antar paket data yang dikirim. Jitter tinggi membuat koneksi terasa tersendat, terutama saat video call atau bermain game online.</p>
+    </div>
+    <div class="edu-card">
+      <span class="edu-card__icon"><i data-lucide="shield-alert"></i></span>
+      <h3>Mengapa Packet Loss Penting?</h3>
+      <p>Packet loss terjadi ketika sebagian data gagal sampai ke tujuan. Persentase yang tinggi dapat menyebabkan buffering, suara terputus, dan koneksi yang tidak stabil.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== RIWAYAT ===================== -->
+<section class="history-section" id="riwayat">
+  <div class="section-head reveal">
+    <span class="section-eyebrow">Riwayat</span>
+    <h2 class="section-title">Riwayat Pengujian</h2>
+    <p class="section-desc">Seluruh hasil pengujian tersimpan otomatis di perangkat anda.</p>
+  </div>
+  <div class="history-panel glass-panel reveal">
+    <div class="history-panel__head">
+      <span id="historyCount">0 pengujian tersimpan</span>
+      <button class="btn btn--ghost btn--sm" id="clearHistoryBtn">
+        <i data-lucide="trash-2"></i> Hapus Riwayat
+      </button>
+    </div>
+    <div class="history-table-wrap">
+      <table class="history-table" id="historyTable">
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Waktu</th>
+            <th>Ping</th>
+            <th>Download</th>
+            <th>Upload</th>
+            <th>Skor</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody">
+          <tr class="history-empty-row" id="historyEmptyRow">
+            <td colspan="6">Belum ada riwayat pengujian. Jalankan Network Test untuk mulai merekam hasil.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== TENTANG ===================== -->
+<section class="about-section" id="tentang">
+  <div class="about-grid reveal">
+    <div class="about-copy">
+      <span class="section-eyebrow">Tentang Platform</span>
+      <h2 class="section-title">Diagnostik Jaringan yang Presisi dan Akurat</h2>
+      <p>Network Test dibangun untuk memberikan gambaran nyata tentang performa koneksi internet anda, bukan hanya angka, tapi juga konteks: apakah koneksi anda cukup untuk rapat video, gaming kompetitif, atau streaming 4K tanpa gangguan?</p>
+      <div class="about-points">
+        <div class="about-point"><i data-lucide="shield-check"></i> Metodologi pengukuran yang konsisten di setiap sesi</div>
+        <div class="about-point"><i data-lucide="server"></i> Jaringan server tersebar untuk hasil yang relevan</div>
+        <div class="about-point"><i data-lucide="lock"></i> Data pengujian tersimpan lokal di perangkat Anda</div>
+      </div>
+    </div>
+    <div class="about-visual" aria-hidden="true">
+      <div class="about-visual__ring about-visual__ring--1"></div>
+      <div class="about-visual__ring about-visual__ring--2"></div>
+      <div class="about-visual__ring about-visual__ring--3"></div>
+      <i data-lucide="radar" class="about-visual__icon"></i>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- ===================== FOOTER ===================== -->
+<footer class="footer">
+  <div class="footer__inner">
+    <div class="footer__brand">
+      <a href="#beranda" class="navbar__logo">
+        <span class="navbar__logo-icon"><i data-lucide="radar"></i></span>
+        <span class="navbar__logo-text">Network<strong>Test</strong></span>
+      </a>
+      <p>Platform analisis jaringan dan pengujian kecepatan internet dengan desain modern dan pengalaman pengguna premium.</p>
+      <div class="footer__socials">
+        <a href="#" aria-label="Github"><i data-lucide="github"></i></a>
+        <a href="#" aria-label="Mail"><i data-lucide="mail"></i></a>
+      </div>
+    </div>
+
+    <div class="footer__col">
+      <h4>Menu Cepat</h4>
+      <a href="#beranda">Beranda</a>
+      <a href="#uji-kecepatan">Uji Kecepatan</a>
+      <a href="#analisis">Analisis Jaringan</a>
+      <a href="#riwayat">Riwayat</a>
+      <a href="#tentang">Tentang</a>
+    </div>
+
+    <div class="footer__col">
+      <h4>Fitur</h4>
+      <a href="#uji-kecepatan">Pengujian Ping & Jitter</a>
+      <a href="#dashboard">Skor Kualitas Jaringan</a>
+      <a href="#analisis">Kelayakan Aktivitas</a>
+      <a href="#riwayat">Riwayat & Perbandingan</a>
+    </div>
+
+    <div class="footer__col">
+      <h4>Lainnya</h4>
+      <a href="#uji-kecepatan">Mode Otomatis / Manual</a>
+      <a href="#tentang">Tentang Platform</a>
+    </div>
+  </div>
+
+  <div class="footer__bottom">
+    <span>Network Test by Fikarroyal</span>
+    <span>© 2026 Network Test. All rights reserved.</span>
+  </div>
+</footer>
+
+
+<script src="script.js"></script>
+</body>
+</html>
