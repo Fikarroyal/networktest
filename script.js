@@ -1036,20 +1036,20 @@
     const lGrade = gradeLoss(p.packetLoss);
     const sGrade = gradeScore(score);
 
-    const s1 = `Kecepatan download Anda berada di angka ${p.download.toFixed(1)} Mbps, tergolong ${gradeLabel[dGrade].toLowerCase()} dan ${p.download >= 25 ? 'mendukung' : 'kurang ideal untuk'} aktivitas streaming resolusi tinggi seperti 4K.`;
-    const s2 = `Nilai ping ${p.ping.toFixed(0)} ms dengan jitter ${p.jitter.toFixed(1)} ms menunjukkan koneksi Anda ${(pGrade === 'sb' || pGrade === 'b') && (jGrade === 'sb' || jGrade === 'b') ? 'cukup responsif' : 'kurang responsif'} untuk video call dan permainan online.`;
-    const s3 = `Packet loss tercatat ${p.packetLoss.toFixed(1)}%, sehingga koneksi Anda ${lGrade === 'sb' || lGrade === 'b' ? 'tergolong stabil' : 'berpotensi mengalami gangguan'} saat mengunggah berkas besar dengan kecepatan upload ${p.upload.toFixed(1)} Mbps.`;
-    const s4 = `Secara keseluruhan, jaringan Anda memperoleh Network Quality Score ${score}/100 — ${scoreSummary(sGrade)}`;
+    const s1 = `Kecepatan download anda berada di angka ${p.download.toFixed(1)} Mbps, tergolong ${gradeLabel[dGrade].toLowerCase()} dan ${p.download >= 25 ? 'mendukung' : 'kurang ideal untuk'} aktivitas streaming resolusi tinggi seperti 4K.`;
+    const s2 = `Nilai ping ${p.ping.toFixed(0)} ms dengan jitter ${p.jitter.toFixed(1)} ms menunjukkan koneksi anda ${(pGrade === 'sb' || pGrade === 'b') && (jGrade === 'sb' || jGrade === 'b') ? 'cukup responsif' : 'kurang responsif'} untuk video call dan permainan online.`;
+    const s3 = `Packet loss tercatat ${p.packetLoss.toFixed(1)}%, sehingga koneksi anda ${lGrade === 'sb' || lGrade === 'b' ? 'tergolong stabil' : 'berpotensi mengalami gangguan'} saat mengunggah berkas besar dengan kecepatan upload ${p.upload.toFixed(1)} Mbps.`;
+    const s4 = `Secara keseluruhan, jaringan anda memperoleh Network Quality Score ${score}/100. ${scoreSummary(sGrade)}`;
 
     document.getElementById('analysisText').textContent = `${s1} ${s2} ${s3} ${s4}`;
   }
 
   function scoreSummary(grade) {
     return {
-      sb: 'kualitas koneksi sangat baik dan siap untuk hampir semua aktivitas digital.',
-      b: 'kualitas koneksi baik dan mampu menangani sebagian besar aktivitas harian dengan lancar.',
-      c: 'kualitas koneksi cukup, namun mungkin terasa terbatas pada aktivitas yang menuntut bandwidth besar.',
-      k: 'kualitas koneksi kurang optimal dan disarankan untuk memeriksa jaringan atau perangkat Anda.'
+      sb: 'Kualitas koneksi sangat baik dan siap untuk hampir semua aktivitas digital.',
+      b: 'Kualitas koneksi baik dan mampu menangani sebagian besar aktivitas harian dengan lancar.',
+      c: 'Kualitas koneksi cukup, namun mungkin terasa terbatas pada aktivitas yang menuntut bandwidth besar.',
+      k: 'Kualitas koneksi kurang optimal dan disarankan untuk memeriksa jaringan atau perangkat anda.'
     }[grade];
   }
 
