@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <title>Network Test</title>
-<meta name="description" content="Network Test — Uji kecepatan internet, analisis kualitas koneksi, dan optimalkan jaringan Anda dalam satu dashboard modern.">
+<meta name="description" content="Uji kecepatan internet, analisis kualitas koneksi, dan optimalkan jaringan anda dalam satu dashboard modern.">
 
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -84,10 +84,10 @@
       Real-Time Network Analysis
     </div>
     <h1 class="hero__title fade-up" style="--delay:0.08s">
-      Kenali Performa Jaringan <br class="hero__title-break"> Secara Real Time
+      Kenali Performa Jaringan<br class="hero__title-break"> Secara Real Time
     </h1>
     <p class="hero__desc fade-up" style="--delay:0.16s">
-      Lakukan pengujian kecepatan internet, pantau kondisi kualitas koneksi, dapatkan informasi jaringan secara cepat dan mudah dalam satu platform.
+      Uji kecepatan internet, pantau kualitas koneksi, dan dapatkan informasi jaringan anda secara akurat.
     </p>
     <div class="hero__actions fade-up" style="--delay:0.24s">
       <a href="#uji-kecepatan" class="btn btn--primary btn--lg">
@@ -102,17 +102,17 @@
 
     <div class="hero__stats fade-up" style="--delay:0.32s">
       <div class="hero__stat">
-        <span class="hero__stat-value" id="heroStatServers">19+</span>
+        <span class="hero__stat-value" id="heroStatServers">10+</span>
         <span class="hero__stat-label">Server Indo</span>
       </div>
       <div class="hero__stat-divider"></div>
-      <div class="hero__stat">
-        <span class="hero__stat-value" id="heroStatTests">1.3K</span>
-        <span class="hero__stat-label">Pengujian Selesai</span>
+      <div class="hero__stat">  
+        <span class="hero__stat-value" id="heroStatTests">1.2K</span>
+        <span class="hero__stat-label">Pengujian Akurat</span>
       </div>
       <div class="hero__stat-divider"></div>
       <div class="hero__stat">
-        <span class="hero__stat-value">90.5%</span>
+        <span class="hero__stat-value">90.2%</span>
         <span class="hero__stat-label">Akurasi Sinyal</span>
       </div>
     </div>
@@ -127,7 +127,7 @@
   <div class="section-head reveal">
     <span class="section-eyebrow">Instrumen Pengujian</span>
     <h2 class="section-title">Panel Uji Kecepatan</h2>
-    <p class="section-desc">Klik mulai untuk mengukur ping, kecepatan unduh, unggah, dan kestabilan koneksi anda secara menyeluruh.</p>
+    <p class="section-desc">Klik tekan untuk mengukur ping, kecepatan unduh, unggah, dan kestabilan koneksi anda secara menyeluruh.</p>
   </div>
 
   <div class="test-panel glass-panel reveal">
@@ -225,7 +225,7 @@
     <!-- Realtime chart -->
     <div class="chart-box">
       <div class="chart-box__head">
-        <span><i data-lucide="line-chart"></i> Grafik Kecepatan Real-Time</span>
+        <span><i data-lucide="line-chart"></i> Grafik Kecepatan Real Time</span>
         <div class="chart-legend">
           <span class="chart-legend__item"><i class="dot dot--download"></i>Download</span>
           <span class="chart-legend__item"><i class="dot dot--upload"></i>Upload</span>
@@ -234,6 +234,20 @@
       </div>
       <canvas id="realtimeChart" height="90"></canvas>
     </div>
+  </div>
+
+  <!-- Server selection -->
+  <div class="server-panel glass-panel reveal">
+    <div class="server-panel__head">
+      <div>
+        <h3><i data-lucide="server"></i> Pemilihan Server</h3>
+        <p>Pilih server pengujian secara manual atau gunakan rekomendasi otomatis dengan latency terendah.</p>
+      </div>
+      <button class="btn btn--secondary btn--sm" id="autoServerBtn">
+        <i data-lucide="sparkles"></i> Rekomendasi Otomatis
+      </button>
+    </div>
+    <div class="server-list" id="serverList"></div>
   </div>
 </section>
 
@@ -319,6 +333,13 @@
         <span class="metric-card__value metric-card__value--text" id="resultLocation">—</span>
       </span>
     </div>
+    <div class="metric-card metric-card--wide">
+      <span class="metric-card__icon"><i data-lucide="server"></i></span>
+      <span class="metric-card__wide-text">
+        <span class="metric-card__label">Server</span>
+        <span class="metric-card__value metric-card__value--text" id="resultServer">—</span>
+      </span>
+    </div>
   </div>
 
   <div class="export-bar reveal">
@@ -339,8 +360,8 @@
   <div class="analysis-grid">
     <div class="analysis-card glass-panel reveal">
       <div class="section-head section-head--left">
-        <span class="section-eyebrow">Analisis Jaringan</span>
-        <h2 class="section-title">Analisis Koneksi Anda</h2>
+        <span class="section-eyebrow">Interpretasi Otomatis</span>
+        <h2 class="section-title">Analisis Koneksi</h2>
       </div>
       <p class="analysis-text" id="analysisText">
         Jalankan pengujian terlebih dahulu agar Network Test dapat menganalisis kualitas koneksi anda secara mendalam dan akurat.
@@ -386,7 +407,7 @@
 <!-- ===================== RIWAYAT ===================== -->
 <section class="history-section" id="riwayat">
   <div class="section-head reveal">
-    <span class="section-eyebrow">Riwayat</span>
+    <span class="section-eyebrow">Rekam Jejak</span>
     <h2 class="section-title">Riwayat Pengujian</h2>
     <p class="section-desc">Seluruh hasil pengujian tersimpan otomatis di perangkat anda.</p>
   </div>
@@ -424,12 +445,12 @@
   <div class="about-grid reveal">
     <div class="about-copy">
       <span class="section-eyebrow">Tentang Platform</span>
-      <h2 class="section-title">Diagnostik Jaringan yang Presisi dan Akurat</h2>
-      <p>Network Test dibangun untuk memberikan gambaran nyata tentang performa koneksi internet anda, bukan hanya angka, tapi juga konteks: apakah koneksi anda cukup untuk rapat video, gaming kompetitif, atau streaming 4K tanpa gangguan?</p>
+      <h2 class="section-title">Diagnostik jaringan yang presisi dan akurat</h2>
+      <p>Network Test dibangun untuk memberikan gambaran nyata tentang performa koneksi internet anda.</p>
       <div class="about-points">
         <div class="about-point"><i data-lucide="shield-check"></i> Metodologi pengukuran yang konsisten di setiap sesi</div>
         <div class="about-point"><i data-lucide="server"></i> Jaringan server tersebar untuk hasil yang relevan</div>
-        <div class="about-point"><i data-lucide="lock"></i> Data pengujian tersimpan lokal di perangkat Anda</div>
+        <div class="about-point"><i data-lucide="lock"></i> Data pengujian tersimpan lokal di perangkat anda</div>
       </div>
     </div>
     <div class="about-visual" aria-hidden="true">
@@ -450,7 +471,7 @@
         <span class="navbar__logo-icon"><i data-lucide="radar"></i></span>
         <span class="navbar__logo-text">Network<strong>Test</strong></span>
       </a>
-      <p>Platform analisis jaringan dan pengujian kecepatan internet dengan desain modern dan pengalaman pengguna premium.</p>
+      <p>Platform analisis jaringan dan pengujian kecepatan internet dengan desain modern.</p>
       <div class="footer__socials">
         <a href="#" aria-label="file-chart-column-increasing"><i data-lucide="file-chart-column-increasing"></i></a>
         <a href="#" aria-label="signal"><i data-lucide="signal"></i></a>
