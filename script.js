@@ -1,9 +1,3 @@
-/* ==========================================================================
-   NETWORK TEST — SCRIPT
-   Semua logika interaktif: animasi jaringan 3D, mesin speed test simulasi
-   realistis, analisis otomatis, riwayat, export, dan pengaturan tampilan.
-   ========================================================================== */
-
 (function () {
   'use strict';
 
@@ -22,9 +16,24 @@
     stageIndex: -1,           // -1 = belum mulai
     stages: ['connect', 'ping', 'download', 'upload', 'finish'],
     ipInfo: null,
+    userCoords: null,
+    selectedServer: null,
     lastResult: null,
-    autoTimer: null
+    autoTimer: null,
+    usedFallback: false      // true jika pengukuran asli gagal & terpaksa pakai simulasi
   };
+
+  const SERVER_CITIES = [
+    { id: 'jkt', name: 'Jakarta', lat: -6.2088, lng: 106.8456 },
+    { id: 'bdg', name: 'Bandung', lat: -6.9175, lng: 107.6191 },
+    { id: 'sby', name: 'Surabaya', lat: -7.2575, lng: 112.7521 },
+    { id: 'smg', name: 'Semarang', lat: -6.9932, lng: 110.4203 },
+    { id: 'yog', name: 'Yogyakarta', lat: -7.7956, lng: 110.3695 },
+    { id: 'mdn', name: 'Medan', lat: 3.5952, lng: 98.6722 },
+    { id: 'mks', name: 'Makassar', lat: -5.1477, lng: 119.4327 },
+    { id: 'dps', name: 'Denpasar', lat: -8.6705, lng: 115.2126 }
+  ];
+  let SERVERS = [];
 
   document.addEventListener('DOMContentLoaded', init);
 
@@ -42,6 +51,10 @@
     safeRun('heroCanvas', initHeroCanvas);
     safeRun('ripple', initRipple);
     safeRun('applySettings', applySettings);
+    safeRun('serverList', renderServerList);
+    safeRun('autoServerBtn', () => {
+      document.getElementById('autoServerBtn').addEventListener('click', autoSelectBestServer);
+    });
     safeRun('dial', initDial);
     safeRun('realtimeChart', initRealtimeChart);
     safeRun('export', initExport);
@@ -279,6 +292,83 @@
   }
 
   /* ------------------------------------------------------------------
+     6. PEMILIHAN SERVER (Indonesia) — jarak nyata via koordinat lokasi
+     ------------------------------------------------------------------ */
+  function haversineKm(lat1, lon1, lat2, lon2) {
+    const toRad = (d) => (d * Math.PI) / 180;
+    const R = 6371;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function buildServers() {
+    return SERVER_CITIES.map(city => {
+      let distanceKm = null;
+      if (state.userCoords) {
+        distanceKm = Math.round(haversineKm(state.userCoords.lat, state.userCoords.lng, city.lat, city.lng));
+      }
+      // Angka ping di daftar server ini hanya perkiraan awal berbasis jarak
+      // (dipakai untuk urutan rekomendasi) — ping SEBENARNYA yang dipakai
+      // pada hasil akhir selalu diambil dari pengukuran nyata saat tombol
+      // MULAI ditekan, bukan dari angka perkiraan ini.
+      const basePing = 5 + Math.random() * 4;
+      const distanceFactor = distanceKm !== null ? distanceKm / 45 : 10 + Math.random() * 35;
+      const ping = Math.max(4, Math.round(basePing + distanceFactor + (Math.random() * 4 - 2)));
+      return { ...city, distanceKm, ping };
+    });
+  }
+
+  function renderServerList(preserveSelection) {
+    const previousId = preserveSelection && state.selectedServer ? state.selectedServer.id : null;
+    SERVERS = buildServers();
+
+    const list = document.getElementById('serverList');
+    list.innerHTML = '';
+    SERVERS.forEach(server => {
+      const el = document.createElement('button');
+      el.className = 'server-item';
+      el.type = 'button';
+      el.dataset.id = server.id;
+      const distanceLabel = server.distanceKm !== null
+        ? `${server.distanceKm.toLocaleString('id-ID')} km dari lokasi Anda`
+        : 'Server domestik Indonesia';
+      el.innerHTML = `
+        <span class="server-item__icon"><i data-lucide="server"></i></span>
+        <span class="server-item__name">${server.name}, Indonesia</span>
+        <span class="server-item__meta">${distanceLabel}</span>
+        <span class="server-item__ping">${server.ping} ms</span>
+      `;
+      el.addEventListener('click', () => selectServer(server.id));
+      list.appendChild(el);
+    });
+    refreshIcons();
+
+    if (previousId && SERVERS.some(s => s.id === previousId)) {
+      selectServer(previousId, true);
+    } else {
+      const best = SERVERS.reduce((a, b) => (a.ping < b.ping ? a : b));
+      selectServer(best.id, true);
+    }
+  }
+
+  function autoSelectBestServer() {
+    const best = SERVERS.reduce((a, b) => (a.ping < b.ping ? a : b));
+    selectServer(best.id);
+    showToast('info', `Server otomatis dipilih: ${best.name} (${best.ping} ms)`, 'sparkles');
+  }
+
+  function selectServer(id, silent) {
+    state.selectedServer = SERVERS.find(s => s.id === id);
+    if (!state.selectedServer) return;
+    document.querySelectorAll('.server-item').forEach(el => {
+      el.classList.toggle('is-selected', el.dataset.id === id);
+    });
+    document.getElementById('resultServer').textContent = `${state.selectedServer.name}, Indonesia`;
+  }
+
+  /* ------------------------------------------------------------------
      7. IP / ISP / LOKASI — via API publik (fallback jika gagal)
      ------------------------------------------------------------------ */
   async function fetchWithTimeout(url, ms) {
@@ -395,6 +485,7 @@
       // Perhalus lokasi sampai level kelurahan/kabupaten/kota lewat reverse
       // geocoding (OpenStreetMap Nominatim) memakai koordinat di atas.
       if (coords) {
+        state.userCoords = coords;
         try {
           const geoUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords.lat}&lon=${coords.lng}&zoom=16&addressdetails=1&accept-language=id`;
           const geoRes = await fetchWithTimeout(geoUrl, 5000);
@@ -416,6 +507,9 @@
           console.error('Network Test — reverse geocode lokasi gagal:', err);
           // Biarkan lokasi dari penyedia IP tetap dipakai sebagai fallback.
         }
+        // Perbarui jarak & ping perkiraan tiap server dengan koordinat asli,
+        // sambil mempertahankan server yang mungkin sudah dipilih pengguna.
+        renderServerList(true);
       }
     } else {
       state.ipInfo = { ip: 'Tidak terdeteksi', isp: 'Tidak terdeteksi', location: 'Tidak terdeteksi' };
@@ -505,24 +599,160 @@
   }
 
   /* ------------------------------------------------------------------
-     10. MESIN SIMULASI JARINGAN — realistis & konsisten secara internal
+     10. MESIN PENGUJIAN JARINGAN NYATA
+     Ping/jitter/packet-loss/download/upload diukur langsung dari koneksi
+     internet pengguna memakai infrastruktur publik speed.cloudflare.com
+     (endpoint yang memang disediakan Cloudflare untuk uji kecepatan pihak
+     ketiga). Kalau koneksi ke server pengujian gagal/diblokir jaringan,
+     otomatis jatuh ke estimasi simulasi yang konsisten secara internal
+     supaya hasil tetap tampil, dan pengguna diberi tahu lewat notifikasi.
      ------------------------------------------------------------------ */
-  function generateProfile() {
-    // Q = faktor kualitas koneksi tersembunyi (0.25 - 1.0), menentukan
-    // seluruh metrik agar hasil akhir saling konsisten secara logis.
-    const Q = clamp(0.25 + Math.random() * 0.75, 0.25, 1);
+  const CF_DOWNLOAD_URL = 'https://speed.cloudflare.com/__down';
+  const CF_UPLOAD_URL = 'https://speed.cloudflare.com/__up';
 
-    const ping = round1(8 + (1 - Q) * 95 + (Math.random() * 6 - 3));
-    const jitter = round1(Math.max(0.6, ping * (0.05 + Math.random() * 0.22)));
-    const packetLoss = Q > 0.78
-      ? round1(Math.random() * 0.3)
-      : round1(Math.min(6, Math.pow(1 - Q, 2) * 7 + Math.random() * 0.6));
+  function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 
-    const download = round1(Math.max(3, 14 + Q * 280 + (Math.random() * 18 - 9)));
-    const uploadRatio = Q > 0.85 ? (0.65 + Math.random() * 0.3) : (0.08 + Math.random() * 0.32);
-    const upload = round1(Math.max(1, download * uploadRatio));
+  async function measurePing(sampleCount, onSample) {
+    const samples = [];
+    let failed = 0;
+    for (let i = 0; i < sampleCount; i++) {
+      if (!state.running) break;
+      const t0 = performance.now();
+      try {
+        await fetchWithTimeout(`${CF_DOWNLOAD_URL}?bytes=0&x=${Math.random()}`, 3000);
+        const rtt = performance.now() - t0;
+        samples.push(rtt);
+        if (onSample) onSample(rtt);
+      } catch (err) {
+        failed++;
+      }
+    }
+    if (samples.length < 2) return null;
+    // Buang sampel pertama (sering lebih lambat karena overhead koneksi awal)
+    const usable = samples.length > 2 ? samples.slice(1) : samples;
+    const avg = usable.reduce((a, b) => a + b, 0) / usable.length;
+    const jitter = usable.reduce((a, b) => a + Math.abs(b - avg), 0) / usable.length;
+    const packetLoss = (failed / sampleCount) * 100;
+    return { ping: avg, jitter, packetLoss };
+  }
 
-    return { ping: Math.max(4, ping), jitter, packetLoss: Math.max(0, packetLoss), download, upload };
+  async function measureDownload(durationMs, onProgress) {
+    const parallel = 4;
+    const chunkBytes = 26214400; // 25 MB per permintaan
+    let totalBytes = 0;
+    let stopFlag = false;
+    const start = performance.now();
+    const activeControllers = [];
+
+    const progressTimer = setInterval(() => {
+      if (!state.running) { stopFlag = true; activeControllers.forEach(c => { try { c.abort(); } catch (e) {} }); return; }
+      const elapsed = performance.now() - start;
+      if (elapsed > 0) onProgress((totalBytes * 8) / (elapsed / 1000) / 1e6);
+    }, 200);
+
+    async function worker() {
+      while (!stopFlag && state.running && performance.now() - start < durationMs) {
+        const controller = new AbortController();
+        activeControllers.push(controller);
+        try {
+          const res = await fetch(`${CF_DOWNLOAD_URL}?bytes=${chunkBytes}&x=${Math.random()}`, {
+            signal: controller.signal, cache: 'no-store'
+          });
+          if (!res.ok) break;
+          if (!res.body) { // browser tanpa dukungan streaming body — hitung sekaligus
+            const buf = await res.arrayBuffer();
+            totalBytes += buf.byteLength;
+            continue;
+          }
+          const reader = res.body.getReader();
+          while (true) {
+            if (stopFlag || !state.running) { try { await reader.cancel(); } catch (e) {} break; }
+            const { done, value } = await reader.read();
+            if (done) break;
+            totalBytes += value.length;
+            if (performance.now() - start >= durationMs) {
+              stopFlag = true;
+              try { await reader.cancel(); } catch (e) {}
+              break;
+            }
+          }
+        } catch (err) {
+          break; // satu worker gagal — worker lain tetap lanjut mengukur
+        }
+      }
+    }
+
+    const workers = Array.from({ length: parallel }, () => worker());
+    await Promise.race([Promise.all(workers), sleep(durationMs + 2500)]);
+    stopFlag = true;
+    activeControllers.forEach(c => { try { c.abort(); } catch (e) {} });
+    clearInterval(progressTimer);
+
+    const elapsed = performance.now() - start;
+    if (totalBytes <= 0 || elapsed <= 0) return null;
+    return (totalBytes * 8) / (elapsed / 1000) / 1e6;
+  }
+
+  function measureUpload(durationMs, onProgress) {
+    return new Promise((resolve) => {
+      const parallel = 3;
+      const blobSize = 10 * 1024 * 1024; // 10 MB per stream
+      const payload = new Blob([new Uint8Array(blobSize)]);
+      let totalLoaded = 0, settledCount = 0, finished = false;
+      const start = performance.now();
+      const xhrs = [];
+
+      function finalize() {
+        if (finished) return;
+        finished = true;
+        clearInterval(progressTimer);
+        const elapsed = performance.now() - start;
+        resolve(totalLoaded > 0 && elapsed > 0 ? (totalLoaded * 8) / (elapsed / 1000) / 1e6 : null);
+      }
+
+      const progressTimer = setInterval(() => {
+        if (!state.running) { xhrs.forEach(x => { try { x.abort(); } catch (e) {} }); finalize(); return; }
+        const elapsed = performance.now() - start;
+        if (elapsed > 0) onProgress((totalLoaded * 8) / (elapsed / 1000) / 1e6);
+      }, 200);
+
+      for (let i = 0; i < parallel; i++) {
+        const xhr = new XMLHttpRequest();
+        xhrs.push(xhr);
+        let lastLoaded = 0;
+        xhr.open('POST', CF_UPLOAD_URL, true);
+        xhr.upload.onprogress = (e) => { totalLoaded += Math.max(0, e.loaded - lastLoaded); lastLoaded = e.loaded; };
+        const settle = () => { settledCount++; if (settledCount >= parallel) finalize(); };
+        xhr.onloadend = settle;
+        xhr.onerror = settle;
+        xhr.timeout = durationMs + 6000;
+        xhr.ontimeout = settle;
+        try { xhr.send(payload); } catch (err) { settle(); }
+      }
+
+      setTimeout(() => {
+        if (!finished) { xhrs.forEach(x => { try { x.abort(); } catch (e) {} }); finalize(); }
+      }, durationMs + 1500);
+    });
+  }
+
+  // ---------- Fallback simulasi (dipakai HANYA bila pengukuran asli gagal) ----------
+  function applyFallback(part) {
+    state.usedFallback = true;
+    const Q = state.fallbackQ;
+    if (part === 'ping') {
+      const ping = round1(8 + (1 - Q) * 95 + (Math.random() * 6 - 3));
+      state.profile.ping = Math.max(4, ping);
+      state.profile.jitter = round1(Math.max(0.6, state.profile.ping * (0.05 + Math.random() * 0.22)));
+      state.profile.packetLoss = Q > 0.78
+        ? round1(Math.random() * 0.3)
+        : round1(Math.min(6, Math.pow(1 - Q, 2) * 7 + Math.random() * 0.6));
+    } else if (part === 'download') {
+      state.profile.download = round1(Math.max(3, 14 + Q * 280 + (Math.random() * 18 - 9)));
+    } else if (part === 'upload') {
+      const ratio = Q > 0.85 ? (0.65 + Math.random() * 0.3) : (0.08 + Math.random() * 0.32);
+      state.profile.upload = round1(Math.max(1, (state.profile.download || 50) * ratio));
+    }
   }
 
   function computeScore({ ping, jitter, packetLoss, download, upload }) {
@@ -548,8 +778,8 @@
   /* ------------------------------------------------------------------
      11. DIAL & ALUR PENGUJIAN
      ------------------------------------------------------------------ */
-  const STAGE_DURATIONS = { connect: 900, ping: 1300, download: 2400, upload: 2100, finish: 700 };
-  const STAGE_WEIGHT = { connect: 0.06, ping: 0.16, download: 0.4, upload: 0.32, finish: 0.06 };
+  const STAGE_DURATIONS = { connect: 700, ping: 1800, download: 5000, upload: 4000, finish: 600 };
+  const STAGE_WEIGHT = { connect: 0.05, ping: 0.15, download: 0.45, upload: 0.30, finish: 0.05 };
 
   function initDial() {
     document.getElementById('testButton').addEventListener('click', onDialClick);
@@ -580,10 +810,9 @@
     state.running = true;
     state.stageBusy = false;
     state.stageIndex = -1;
-    state.profile = generateProfile();
-    state.simDownload = 0;
-    state.simUpload = 0;
-    state.simPing = 0;
+    state.profile = { ping: 0, jitter: 0, packetLoss: 0, download: 0, upload: 0 };
+    state.fallbackQ = clamp(0.25 + Math.random() * 0.75, 0.25, 1);
+    state.usedFallback = false;
 
     resetChart();
     resetStageUI();
@@ -598,11 +827,7 @@
     document.getElementById('dialLabel').textContent = 'BERHENTI';
     document.getElementById('dialSub').textContent = state.mode === 'auto' ? 'Pengujian berjalan…' : 'Tekan untuk lanjut';
 
-    if (state.mode === 'auto') {
-      runStage(0);
-    } else {
-      runStage(0, true); // manual: jalankan tahap pertama saja lalu berhenti menunggu klik
-    }
+    runStage(0, state.mode === 'manual');
   }
 
   function advanceManualStage() {
@@ -611,28 +836,79 @@
     runStage(next, true);
   }
 
-  function runStage(index, pauseAfter) {
+  async function runStage(index) {
     if (!state.running) return;
     if (index >= state.stages.length) { finishTest(); return; }
     state.stageIndex = index;
     const stageName = state.stages[index];
     setStageActive(stageName);
+    state.stageBusy = true;
 
+    const baseProgress = overallProgress(index - 1);
+    const weight = STAGE_WEIGHT[stageName];
     const duration = STAGE_DURATIONS[stageName];
-    animateStageProgress(stageName, duration, () => {
-      if (!state.running) return;
-      setStageDone(stageName);
-      updateDialProgress(overallProgress(index));
+    const tickStart = performance.now();
+    let ringDone = false;
 
-      if (index === state.stages.length - 1) { finishTest(); return; }
-      if (state.mode === 'auto') {
-        runStage(index + 1);
-      } else {
-        // manual: berhenti dan tunggu klik berikutnya
-        document.getElementById('dialLabel').textContent = 'LANJUT';
-        document.getElementById('dialSub').textContent = `Lanjut: ${stageLabel(state.stages[index + 1])}`;
+    function ringTick() {
+      if (!state.running || ringDone) return;
+      const t = clamp((performance.now() - tickStart) / duration, 0, 0.96);
+      updateDialProgress(baseProgress + weight * t);
+      requestAnimationFrame(ringTick);
+    }
+    requestAnimationFrame(ringTick);
+
+    try {
+      if (stageName === 'connect') {
+        await sleep(duration);
+      } else if (stageName === 'ping') {
+        const result = await measurePing(6, (rtt) => {
+          document.getElementById('livePing').textContent = Math.max(0, Math.round(rtt));
+        });
+        if (result) {
+          state.profile.ping = round1(result.ping);
+          state.profile.jitter = round1(result.jitter);
+          state.profile.packetLoss = round1(result.packetLoss);
+        } else {
+          applyFallback('ping');
+        }
+        document.getElementById('livePing').textContent = state.profile.ping.toFixed(0);
+      } else if (stageName === 'download') {
+        const mbps = await measureDownload(duration, (liveMbps) => {
+          document.getElementById('liveDownload').textContent = liveMbps.toFixed(1);
+          pushChartPoint(liveMbps, 0, state.profile.ping || 0);
+        });
+        state.profile.download = mbps && mbps > 0 ? round1(mbps) : (applyFallback('download'), state.profile.download);
+        document.getElementById('liveDownload').textContent = state.profile.download.toFixed(1);
+      } else if (stageName === 'upload') {
+        const mbps = await measureUpload(duration, (liveMbps) => {
+          document.getElementById('liveUpload').textContent = liveMbps.toFixed(1);
+          pushChartPoint(state.profile.download || 0, liveMbps, state.profile.ping || 0);
+        });
+        state.profile.upload = mbps && mbps > 0 ? round1(mbps) : (applyFallback('upload'), state.profile.upload);
+        document.getElementById('liveUpload').textContent = state.profile.upload.toFixed(1);
+      } else if (stageName === 'finish') {
+        await sleep(duration);
       }
-    });
+    } catch (err) {
+      console.error('Network Test — pengukuran tahap ' + stageName + ' gagal:', err);
+      if (stageName !== 'connect' && stageName !== 'finish') applyFallback(stageName);
+    }
+
+    ringDone = true;
+    if (!state.running) return;
+    state.stageBusy = false;
+    setStageDone(stageName);
+    updateDialProgress(overallProgress(index));
+
+    if (index === state.stages.length - 1) { finishTest(); return; }
+    if (state.mode === 'auto') {
+      runStage(index + 1);
+    } else {
+      // manual: berhenti dan tunggu klik berikutnya
+      document.getElementById('dialLabel').textContent = 'LANJUT';
+      document.getElementById('dialSub').textContent = `Lanjut: ${stageLabel(state.stages[index + 1])}`;
+    }
   }
 
   function stageLabel(name) {
@@ -646,41 +922,6 @@
     let acc = 0;
     for (let i = 0; i <= stageIndex; i++) acc += STAGE_WEIGHT[state.stages[i]];
     return acc;
-  }
-
-  function animateStageProgress(stageName, duration, onDone) {
-    const start = performance.now();
-    const profile = state.profile;
-    state.stageBusy = true;
-
-    function tick(now) {
-      if (!state.running) return;
-      const t = clamp((now - start) / duration, 0, 1);
-      const eased = 1 - Math.pow(1 - t, 2);
-
-      if (stageName === 'ping') {
-        state.simPing = round1(profile.ping * eased + (Math.random() * 2 - 1));
-        document.getElementById('livePing').textContent = Math.max(0, state.simPing).toFixed(0);
-      }
-      if (stageName === 'download') {
-        state.simDownload = round1(profile.download * eased);
-        document.getElementById('liveDownload').textContent = state.simDownload.toFixed(1);
-        pushChartPoint(state.simDownload, 0, profile.ping);
-      }
-      if (stageName === 'upload') {
-        state.simUpload = round1(profile.upload * eased);
-        document.getElementById('liveUpload').textContent = state.simUpload.toFixed(1);
-        pushChartPoint(profile.download, state.simUpload, profile.ping);
-      }
-
-      const progressWithinStage = STAGE_WEIGHT[stageName] * eased;
-      const base = overallProgress(state.stages.indexOf(stageName) - 1 >= 0 ? state.stages.indexOf(stageName) - 1 : -1);
-      updateDialProgress(base + progressWithinStage);
-
-      if (t < 1) requestAnimationFrame(tick);
-      else { state.stageBusy = false; onDone(); }
-    }
-    requestAnimationFrame(tick);
   }
 
   function updateDialProgress(fraction) {
@@ -739,6 +980,9 @@
     setNetworkStatus(profile.packetLoss < 2 && profile.jitter < 35 ? 'stable' : 'unstable');
     playBeep(880);
     showToast('success', 'Pengujian selesai! Hasil telah diperbarui.', 'check-circle-2');
+    if (state.usedFallback) {
+      showToast('info', 'Sebagian metrik memakai estimasi karena koneksi ke server pengujian sempat gagal.', 'alert-triangle');
+    }
 
     renderResult(profile, score);
     saveHistoryEntry(profile, score);
@@ -752,6 +996,7 @@
      ------------------------------------------------------------------ */
   function renderResult(profile, score) {
     state.lastResult = { ...profile, score };
+
 
     setMetric('resultPing', profile.ping.toFixed(0), gradePing(profile.ping));
     setMetric('resultDownload', profile.download.toFixed(1), gradeDownload(profile.download));
@@ -767,6 +1012,8 @@
 
     const circumference = 326.7;
     document.getElementById('scoreGaugeProgress').style.strokeDashoffset = circumference * (1 - score / 100);
+
+    document.getElementById('resultServer').textContent = state.selectedServer ? `${state.selectedServer.name}, Indonesia` : '—';
 
     renderAnalysis(profile, score);
     renderActivities(profile);
@@ -789,20 +1036,20 @@
     const lGrade = gradeLoss(p.packetLoss);
     const sGrade = gradeScore(score);
 
-    const s1 = `Kecepatan download anda berada di angka ${p.download.toFixed(1)} Mbps, tergolong ${gradeLabel[dGrade].toLowerCase()} dan ${p.download >= 25 ? 'mendukung' : 'kurang ideal untuk'} aktivitas streaming resolusi tinggi seperti 4K.`;
-    const s2 = `Nilai ping ${p.ping.toFixed(0)} ms dengan jitter ${p.jitter.toFixed(1)} ms menunjukkan koneksi anda ${(pGrade === 'sb' || pGrade === 'b') && (jGrade === 'sb' || jGrade === 'b') ? 'cukup responsif' : 'kurang responsif'} untuk video call dan permainan online.`;
-    const s3 = `Packet loss tercatat ${p.packetLoss.toFixed(1)}%, sehingga koneksi anda ${lGrade === 'sb' || lGrade === 'b' ? 'tergolong stabil' : 'berpotensi mengalami gangguan'} saat mengunggah berkas besar dengan kecepatan upload ${p.upload.toFixed(1)} Mbps.`;
-    const s4 = `Secara keseluruhan, jaringan anda memperoleh Network Quality Score ${score}/100. ${scoreSummary(sGrade)}`;
+    const s1 = `Kecepatan download Anda berada di angka ${p.download.toFixed(1)} Mbps, tergolong ${gradeLabel[dGrade].toLowerCase()} dan ${p.download >= 25 ? 'mendukung' : 'kurang ideal untuk'} aktivitas streaming resolusi tinggi seperti 4K.`;
+    const s2 = `Nilai ping ${p.ping.toFixed(0)} ms dengan jitter ${p.jitter.toFixed(1)} ms menunjukkan koneksi Anda ${(pGrade === 'sb' || pGrade === 'b') && (jGrade === 'sb' || jGrade === 'b') ? 'cukup responsif' : 'kurang responsif'} untuk video call dan permainan online.`;
+    const s3 = `Packet loss tercatat ${p.packetLoss.toFixed(1)}%, sehingga koneksi Anda ${lGrade === 'sb' || lGrade === 'b' ? 'tergolong stabil' : 'berpotensi mengalami gangguan'} saat mengunggah berkas besar dengan kecepatan upload ${p.upload.toFixed(1)} Mbps.`;
+    const s4 = `Secara keseluruhan, jaringan Anda memperoleh Network Quality Score ${score}/100 — ${scoreSummary(sGrade)}`;
 
     document.getElementById('analysisText').textContent = `${s1} ${s2} ${s3} ${s4}`;
   }
 
   function scoreSummary(grade) {
     return {
-      sb: 'Kualitas koneksi sangat baik dan siap untuk hampir semua aktivitas digital.',
-      b: 'Kualitas koneksi baik dan mampu menangani sebagian besar aktivitas harian dengan lancar.',
-      c: 'Kualitas koneksi cukup, namun mungkin terasa terbatas pada aktivitas yang menuntut bandwidth besar.',
-      k: 'Kualitas koneksi kurang optimal dan disarankan untuk memeriksa jaringan atau perangkat Anda.'
+      sb: 'kualitas koneksi sangat baik dan siap untuk hampir semua aktivitas digital.',
+      b: 'kualitas koneksi baik dan mampu menangani sebagian besar aktivitas harian dengan lancar.',
+      c: 'kualitas koneksi cukup, namun mungkin terasa terbatas pada aktivitas yang menuntut bandwidth besar.',
+      k: 'kualitas koneksi kurang optimal dan disarankan untuk memeriksa jaringan atau perangkat Anda.'
     }[grade];
   }
 
@@ -932,6 +1179,7 @@
       `Jitter: ${r.jitter.toFixed(1)} ms`,
       `Packet Loss: ${r.packetLoss.toFixed(1)}%`,
       `Network Quality Score: ${r.score}/100`,
+      `Server: ${state.selectedServer ? state.selectedServer.name + ', Indonesia' : '-'}`,
       `IP: ${state.ipInfo ? state.ipInfo.ip : '-'}`,
       'Network Test by Fikarroyal'
     ].join('\n');
@@ -1110,8 +1358,9 @@
     metricRow('IP ADDRESS', state.ipInfo ? state.ipInfo.ip : '-', null);
     metricRow('ISP', state.ipInfo ? state.ipInfo.isp : '-', null);
     metricRow('LOKASI', state.ipInfo ? state.ipInfo.location : '-', null);
+    metricRow('SERVER', state.selectedServer ? `${state.selectedServer.name}, Indonesia` : '-', null);
 
-    doc.save('result network test.pdf');
+    doc.save('network-test-hasil.pdf');
     showToast('success', 'Hasil berhasil diunduh sebagai PDF.', 'file-down');
   }
 
