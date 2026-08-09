@@ -1,11 +1,4 @@
-/* ==========================================================================
-   NETWORK TEST — STYLESHEET
-   Desain: Glassmorphism biru-putih, tipografi Plus Jakarta Sans / Inter /
-   Roboto Mono (untuk pembacaan data seperti instrumen jaringan, angka
-   nol tanpa titik agar lebih modern dan mudah dibaca).
-   ========================================================================== */
-
-/* ---------- Design Tokens ---------- */
+/* ---------- Design ---------- */
 :root {
   --white: #ffffff;
   --bg-base: #eef6fd;
@@ -509,6 +502,50 @@ main > section {
 .dot--upload { background: #7fd0c4; }
 .dot--ping { background: #f2b84b; }
 
+/* Server panel */
+.server-panel { padding: 28px; }
+.server-panel__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.server-panel__head h3 { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-size: 17px; margin-bottom: 6px; }
+.server-panel__head h3 i { width: 17px; height: 17px; color: var(--accent); }
+.server-panel__head p { color: var(--text-muted); font-size: 13.5px; max-width: 420px; }
+
+.server-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(258px, 1fr)); gap: 12px; }
+.server-item {
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 2px;
+  padding: 14px; border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.6); border: 1.5px solid rgba(255,255,255,0.9);
+  box-shadow: var(--glass-shadow-sm);
+  transition: all 0.25s var(--ease); text-align: left;
+  min-height: 68px;
+}
+.server-item:hover { background: var(--white); box-shadow: var(--glass-shadow); }
+.server-item.is-selected { border-color: var(--accent); background: rgba(47,127,255,0.08); }
+.server-item__icon {
+  grid-column: 1; grid-row: 1 / 3;
+  width: 34px; height: 34px; border-radius: 10px; background: rgba(47,127,255,0.1); color: var(--accent-strong);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.server-item__icon i { width: 16px; height: 16px; }
+.server-item__name {
+  grid-column: 2; grid-row: 1;
+  font-weight: 600; font-size: 13.5px; color: var(--navy);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+}
+.server-item__meta {
+  grid-column: 2; grid-row: 2;
+  font-size: 11.5px; color: var(--text-faint);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+}
+.server-item__ping {
+  grid-column: 3; grid-row: 1 / 3;
+  font-family: var(--font-mono); font-size: 12.5px; font-weight: 700; color: var(--success);
+  white-space: nowrap; flex-shrink: 0; align-self: center;
+}
+
 /* ==========================================================================
    DASHBOARD RESULTS
    ========================================================================== */
@@ -750,7 +787,7 @@ main > section {
   .hero__actions .btn { width: 100%; }
   .live-metrics { grid-template-columns: 1fr; }
   .dashboard-grid { grid-template-columns: 1fr; }
-  .test-panel, .analysis-card, .activity-card, .history-panel { padding: 20px; }
+  .test-panel, .server-panel, .analysis-card, .activity-card, .history-panel { padding: 20px; }
   .dial-wrap { width: 180px; height: 180px; }
   .dial-icon { width: 28px; height: 28px; }
   .dial-label { font-size: 17px; }
