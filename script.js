@@ -1243,7 +1243,7 @@
     doc.text('Network', wordX, logoY + 6.5);
     const networkWidth = doc.getTextWidth('Network ');
     doc.setTextColor(...C.accentStrong);
-    doc.text(' Test', wordX + networkWidth, logoY + 6.5);
+    doc.text('Test', wordX + networkWidth, logoY + 6.5);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
